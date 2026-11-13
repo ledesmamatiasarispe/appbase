@@ -46,21 +46,22 @@ def _pagina(modulos: list[Modulo]) -> str:
         "{{v}}": v, "{{subtitulo}}": escape(ajustes.SUBTITULO), "{{login}}": escape(ajustes.LOGIN),
         "{{prefijo}}": ajustes.PREFIJO.lower(),
     }
+    icono = "/static/app/icono.svg" if ajustes.FRONTEND and (ajustes.FRONTEND / "icono.svg").is_file() else "/static/nucleo/icono.svg"
     for k, val in reemplazos.items():
         html = html.replace(k, val)
     m = marca.marca()
     html = html.replace("{{nombre}}", escape(m["nombre"]))
     if m["logo"]:
         logo = f'/api/marca/logo?v={m["logo"]}'
-        html = html.replace('type="image/svg+xml" href="/static/nucleo/icono.svg"', f'type="{marca.archivo_logo()["tipo"]}" href="{logo}"')
-        html = html.replace("/static/nucleo/icono.svg", logo)
-    return html
+        html = html.replace('type="image/svg+xml" href="{{icono}}"', f'type="{marca.archivo_logo()["tipo"]}" href="{logo}"')
+        html = html.replace("{{icono}}", logo)
+    return html.replace("{{icono}}", icono)
 
 
 def crear_app(modulos: list[Modulo] = (), con_ejemplos: bool = True) -> FastAPI:
     modulos = list(modulos)
     nombres = [m.nombre for m in modulos]
-    if len(set(nombres)) != len(nombres) or "nucleo" in nombres:
+    if len(set(nombres)) != len(nombres) or {"nucleo", "app"} & set(nombres):
         raise ValueError(f"Nombres de módulo repetidos o reservados: {nombres}")
 
     @asynccontextmanager
@@ -78,6 +79,8 @@ def crear_app(modulos: list[Modulo] = (), con_ejemplos: bool = True) -> FastAPI:
     app = FastAPI(title=ajustes.NOMBRE, lifespan=ciclo)
     app.state.modulos = modulos
     app.mount("/static/nucleo", StaticFiles(directory=FRONTEND), name="nucleo")
+    if ajustes.FRONTEND and ajustes.FRONTEND.is_dir():
+        app.mount("/static/app", StaticFiles(directory=ajustes.FRONTEND), name="app")
     for m in modulos:
         if m.carpeta and (m.carpeta / "frontend").is_dir():
             app.mount(f"/static/{m.nombre}", StaticFiles(directory=m.carpeta / "frontend"), name=m.nombre)

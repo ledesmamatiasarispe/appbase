@@ -42,8 +42,9 @@ CREATE TABLE IF NOT EXISTS config (
     clave  TEXT PRIMARY KEY,
     valor  TEXT NOT NULL
 );
--- Archivos subidos (adjuntos.py). Cada módulo los vincula por id desde sus propias tablas.
-CREATE TABLE IF NOT EXISTS adjuntos (
+-- Archivos subidos (adjuntos.py). Cada módulo los vincula por id desde sus propias tablas. Se llama archivos y no
+-- adjuntos para no chocar con la tabla propia de una app (UltraMantenimiento tiene adjuntos de sus instructivos).
+CREATE TABLE IF NOT EXISTS archivos (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     carpeta     TEXT    NOT NULL,                 -- subcarpeta de data/adjuntos/ (la elige el módulo)
     archivo     TEXT    NOT NULL UNIQUE,          -- <hex>.<ext>: nombre aleatorio, nunca el original

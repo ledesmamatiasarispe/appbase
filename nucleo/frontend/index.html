@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- La arma nucleo/aplicacion.py: los marcadores se llenan con el nombre, el menú y los archivos de cada módulo. -->
   <title>{{nombre}}</title>
-  <link rel="icon" type="image/svg+xml" href="/static/nucleo/icono.svg">
+  <link rel="icon" type="image/svg+xml" href="{{icono}}">
   <link rel="stylesheet" href="/static/nucleo/nucleo.css?v={{v}}">
   <link rel="stylesheet" href="/static/nucleo/ayuda.css?v={{v}}">
   {{estilos}}
 </head>
-<body data-prefijo="{{prefijo}}">
+<body data-prefijo="{{prefijo}}" data-login="{{login}}">
   <div id="login" class="login oculto">
     <form id="form-login" class="tarjeta login-caja">
-      <img class="login-logo" src="/static/nucleo/icono.svg" alt="">
+      <img class="login-logo" src="{{icono}}" alt="">
       <h1>{{nombre}}</h1>
       <p class="sutil">{{subtitulo}}</p>
       <label>{{login}} <input name="usuario" autocomplete="username" autocapitalize="none" required></label>
@@ -25,7 +25,7 @@
 
   <div id="app" class="oculto">
     <header class="barra">
-      <span class="marca"><img src="/static/nucleo/icono.svg" alt=""><span class="marca-texto">{{nombre}}</span></span>
+      <span class="marca"><img src="{{icono}}" alt=""><span class="marca-texto">{{nombre}}</span></span>
       <nav id="menu" aria-label="Pantallas">
         {{menu}}
       </nav>

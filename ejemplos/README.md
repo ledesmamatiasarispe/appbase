@@ -17,6 +17,7 @@ más apps, se convierte en un módulo de `modulos/` o pasa al núcleo.
 | `alertas_con_ritmo/` | Gestión Automotor | Alertas de vencimiento configurables: "aparece N días antes" y "se pone roja cuando faltan M". |
 | `chequeo_de_ayuda/` | Gestión Automotor | Herramienta de desarrollo: recorre cada pantalla y formulario y lista los pasos de la Ayuda que no encuentran su elemento (con Edge headless `--dump-dom`). |
 | `importar_desde_excel/` | Gestión Automotor | Importador de una planilla con simulación sin escribir, una transacción por fila e idempotente. |
+| `migracion_ultramantenimiento/` | UltraMantenimiento | Los archivos reales de su paso al núcleo (ver `docs/migrar_una_app.md`): migración de usuarios por legajo, módulo, tests que no tocan la base real. |
 | `multiplataforma/` | Edificios de Mamá | Lanzadores de doble clic para Windows, Mac y Linux, empaquetado y release para los tres sistemas, y el actualizador que también instala desde el código fuente. |
 
 Lo que ya pasó al núcleo (y no hace falta copiar): sesiones y usuarios, contraseña provisoria con aviso, nombre y logo,

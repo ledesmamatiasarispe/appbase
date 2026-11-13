@@ -4,21 +4,44 @@
     "repo": "ledesmamatiasarispe/super-duper-lamp",
     "prefijo": "MANT",
     "puerto": 8095,
-    "nucleo": null,
-    "modulos": ["equipos e instructivos", "plan y cronograma", "registros", "horómetros", "correctivos", "personal", "áreas", "mapa de planta"]
+    "nucleo": "1.0.1",
+    "modulos": [
+      "mantenimiento (equipos e instructivos, plan y cronograma, registros, horómetros, correctivos, personal, áreas, mapa de planta)"
+    ],
+    "version": "1.1.0"
   },
   "GestionAutomotorAPB": {
     "repo": "ledesmamatiasarispe/gestionautomotorapb",
     "prefijo": "AUTO",
     "puerto": 8097,
     "nucleo": null,
-    "modulos": ["clientes", "vehículos", "flotas", "pólizas", "compañías", "documentación", "alertas", "cronograma", "mail semanal", "historial", "importar otra instalación"]
+    "modulos": [
+      "clientes",
+      "vehículos",
+      "flotas",
+      "pólizas",
+      "compañías",
+      "documentación",
+      "alertas",
+      "cronograma",
+      "mail semanal",
+      "historial",
+      "importar otra instalación"
+    ]
   },
   "EdificiosDeMama": {
     "repo": "ledesmamatiasarispe/edificiosDeMama",
     "prefijo": "EDIF",
     "puerto": 8095,
     "nucleo": null,
-    "modulos": ["consorcios y unidades", "personas", "proveedores", "expensas", "cobros", "saldos y morosos", "administración"]
+    "modulos": [
+      "consorcios y unidades",
+      "personas",
+      "proveedores",
+      "expensas",
+      "cobros",
+      "saldos y morosos",
+      "administración"
+    ]
   }
 }

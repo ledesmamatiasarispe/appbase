@@ -55,7 +55,7 @@ def test_nombre_y_logo_de_la_app(api):
     assert "no es un .png" in error(api.post("/api/marca/logo", files={"archivo": ("logo.png", b"MZ\x00", "image/png")}))
     logo = api.post("/api/marca/logo", files={"archivo": ("logo.png", PNG, "image/png")}).json()["logo"]
     pagina = api.get("/", headers=sin_sesion).text
-    assert f"/api/marca/logo?v={logo}" in pagina and "/static/nucleo/icono.svg" not in pagina and 'type="image/png"' in pagina
+    assert f"/api/marca/logo?v={logo}" in pagina and "icono.svg" not in pagina and 'type="image/png"' in pagina
     r = api.get("/api/marca/logo", headers=sin_sesion)
     assert r.content == PNG and "default-src 'none'" in r.headers["content-security-policy"]
     assert api.delete("/api/marca/logo").json()["logo"] is None and not (db.DB_PATH.parent / "marca" / logo).exists()

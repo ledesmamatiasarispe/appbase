@@ -7,6 +7,7 @@
 //   VISTAS.<nombre> = async (param) => {...}     una pantalla (el menú la abre con #<nombre>; #<nombre>/<param>)
 //   Nucleo.alEntrar.push(async () => {...})      cargar lo que el módulo necesita al iniciar sesión (antes de la 1ra vista)
 //   Nucleo.tarjetasOpciones.push({ orden, html: async () => '...', activar: () => {} })   una tarjeta en Opciones
+//   Nucleo.pestanas.<vista> = '<pestaña>'       qué pestaña del menú se marca en una pantalla que no tiene la suya
 //   Ayuda.pasos.<vista> = () => [...]; Ayuda.tour.push(...)   la ayuda de sus pantallas (ver ayuda.js)
 //   y las utilidades: api, avisar, abrirModal, cerrarModal, leerForm, enviar, opcionesSelect, esc, fecha, miles, hoyISO,
 //   irA, soloAdmin, casillaOcultos / tablaOcultos, S (estado: S.usuario...).
@@ -16,7 +17,7 @@ const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'O
 const MESES_LARGOS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const S = { token: null, usuario: null };
 const VISTAS = {};
-const Nucleo = { alEntrar: [], tarjetasOpciones: [] };
+const Nucleo = { alEntrar: [], tarjetasOpciones: [], pestanas: {} };
 
 // ── utilidades ──
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
@@ -25,6 +26,7 @@ const hoyISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.get
 const fecha = iso => iso ? iso.slice(0, 10).split('-').reverse().join('/') : '';
 const miles = n => n == null ? '—' : Number(n).toLocaleString('es-AR');
 const CLAVE_TOKEN = (document.body.dataset.prefijo || 'app') + '_token';
+const LOGIN = document.body.dataset.login || 'Usuario';   // cómo se llama el dato para entrar (Legajo, Usuario...)
 const leerToken = () => { try { return localStorage.getItem(CLAVE_TOKEN); } catch { return null; } };
 const guardarToken = t => { try { t ? localStorage.setItem(CLAVE_TOKEN, t) : localStorage.removeItem(CLAVE_TOKEN); } catch { /* sin almacenamiento */ } };
 
@@ -153,7 +155,8 @@ function irA(nombre) {
   const [vista, param] = String(nombre || 'inicio').split('/');
   if (!VISTAS[vista]) return irA('inicio');
   if (location.hash.slice(1) !== nombre) history.replaceState(null, '', '#' + nombre);
-  document.querySelectorAll('#menu a').forEach(a => a.classList.toggle('activo', a.dataset.vista === vista));
+  const pestana = Nucleo.pestanas[vista] || vista;   // p. ej. un instructivo se abre desde la pestaña Equipos
+  document.querySelectorAll('#menu a').forEach(a => a.classList.toggle('activo', a.dataset.vista === pestana));
   $('#vista').innerHTML = '<p class="sutil">Cargando…</p>';
   Promise.resolve(VISTAS[vista](param)).catch(e => { $('#vista').innerHTML = `<p class="error">${esc(e.message)}</p>`; });
 }
@@ -292,7 +295,7 @@ VISTAS.usuarios = async () => {
     <p class="sutil">Quiénes entran al sistema. Un <b>usuario</b> usa la app en el día a día; un <b>administrador</b> además configura
       y maneja los usuarios. Siempre tiene que quedar al menos un administrador activo.</p>
     <div class="tarjeta tabla-wrap">${casillaOcultos('usuarios', lista.filter(u => !u.activo).length)}<table ${tablaOcultos('usuarios')}>
-      <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>
+      <thead><tr><th>${esc(LOGIN)}</th><th>Nombre</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>
       ${lista.map(u => `<tr class="${u.activo ? '' : 'baja'}"><td><b>${esc(u.usuario)}</b></td>
         <td>${esc(u.nombre)}${u.id === S.usuario.id ? ' <span class="sutil">(vos)</span>' : ''}</td>
         <td>${u.es_admin ? '<span class="chip azul">Administrador</span>' : '<span class="chip">Usuario</span>'}</td>
@@ -307,7 +310,7 @@ function modalUsuario(id) {
   const u = id ? S.usuarios.find(x => x.id === id) : null;
   abrirModal(`<h2>${u ? 'Editar ' + esc(u.nombre) : 'Nuevo usuario'}</h2>
     <form id="f-usuario"><div class="campos">
-      <label>Usuario (para entrar) <input name="usuario" value="${esc(u?.usuario || '')}" ${u ? 'disabled' : 'required'} autocomplete="off"></label>
+      <label>${esc(LOGIN)} (para entrar) <input name="usuario" value="${esc(u?.usuario || '')}" ${u ? 'disabled' : 'required'} autocomplete="off"></label>
       <label>Nombre <input name="nombre" value="${esc(u?.nombre || '')}" required></label>
       ${u ? '' : '<label class="ancho">Contraseña provisoria (mínimo 6; le queda un aviso hasta que la cambie en Opciones) <input name="password" type="text" autocomplete="off" required></label>'}
       <label class="check ancho"><input type="checkbox" name="es_admin" ${u?.es_admin ? 'checked' : ''}> Administrador (configura el sistema y maneja usuarios)</label>
@@ -315,7 +318,7 @@ function modalUsuario(id) {
     <div class="botones"><button class="primario" type="submit">Guardar</button><button type="button" onclick="cerrarModal()">Cancelar</button></div></form>`);
   alEnviar($('#f-usuario'), async d => {
     await api(u ? '/api/usuarios/' + id : '/api/usuarios', { metodo: u ? 'PUT' : 'POST', datos: d });
-    cerrarModal(); avisar(u ? 'Usuario actualizado.' : 'Usuario creado: entra con su usuario y la contraseña provisoria.');
+    cerrarModal(); avisar(u ? 'Usuario actualizado.' : `Usuario creado: entra con su ${LOGIN.toLowerCase()} y la contraseña provisoria.`);
     if (u && id === S.usuario.id) return entrar();   // si se cambió a sí mismo, refresca nombre y rol
     irA('usuarios');
   });

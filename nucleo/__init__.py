@@ -30,4 +30,4 @@ Uso mínimo (ver app/ en appbase, la app de ejemplo):
 """
 from .ajustes import configurar  # noqa: F401
 
-VERSION_NUCLEO = "1.0.0"
+VERSION_NUCLEO = "1.0.1"

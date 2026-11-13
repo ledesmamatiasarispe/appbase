@@ -15,6 +15,7 @@ VERSION = "0.0.0"
 REPO = ""                  # "usuario/repositorio" de GitHub donde se publican los releases ("" = no busca)
 SUBTITULO = ""             # la línea chica debajo del nombre en la pantalla de ingreso
 LOGIN = "Usuario"          # cómo se llama el dato para entrar ("Legajo", "Usuario"...)
+FRONTEND: Path | None = None   # app/frontend: se sirve en /static/app/; su icono.svg es el ícono de fábrica de la app
 # compilada con PyInstaller: el código va en _internal/ y los datos al lado del .exe; desde el código, en la raíz
 COMPILADA = bool(getattr(sys, "frozen", False))
 RAIZ = Path(sys.executable).resolve().parent if COMPILADA else Path.cwd()
@@ -30,13 +31,15 @@ def exe() -> str:
 
 
 def configurar(*, app: str, nombre: str, prefijo: str, puerto: int, version: str, repo: str = "", raiz: Path | None = None,
-               base: str | None = None, subtitulo: str = "", login: str = "Usuario") -> None:
+               base: str | None = None, subtitulo: str = "", login: str = "Usuario", frontend: Path | None = None) -> None:
     """raiz: la carpeta de la app (donde va data/) cuando corre desde el código; compilada se usa la del .exe.
-    base: el nombre del archivo de la base sin extensión (por defecto, APP en minúsculas)."""
-    global APP, NOMBRE, PREFIJO, PUERTO, VERSION, REPO, RAIZ, SUBTITULO, LOGIN
+    base: el nombre del archivo de la base sin extensión (por defecto, APP en minúsculas).
+    frontend: la carpeta con los archivos propios de la app (icono.svg: su ícono de fábrica)."""
+    global APP, NOMBRE, PREFIJO, PUERTO, VERSION, REPO, RAIZ, SUBTITULO, LOGIN, FRONTEND
     APP, NOMBRE, PREFIJO, PUERTO, VERSION, SUBTITULO, LOGIN = app, nombre, prefijo, int(puerto), version, subtitulo, login
     REPO = os.environ.get(f"{prefijo}_REPO", repo)   # vacío desactiva la búsqueda de actualizaciones (así corren los tests)
     if not COMPILADA and raiz:
         RAIZ = Path(raiz)
+    FRONTEND = Path(frontend) if frontend else None
     from . import db
     db.DB_PATH = Path(os.environ.get(f"{prefijo}_DB") or RAIZ / "data" / f"{base or app.lower()}.db")

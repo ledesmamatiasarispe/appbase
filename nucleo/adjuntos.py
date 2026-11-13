@@ -58,10 +58,10 @@ def subir(usuario: dict, *, sub: str, nombre, datos: bytes, permitidos=tuple(TIP
     (destino_carpeta / archivo).write_bytes(datos)
     try:
         with db.transaccion() as c:
-            c.execute("INSERT INTO adjuntos (carpeta, archivo, nombre, tipo, tamanio, es_imagen, creado_por, creado_en) "
+            c.execute("INSERT INTO archivos (carpeta, archivo, nombre, tipo, tamanio, es_imagen, creado_por, creado_en) "
                       "VALUES (?,?,?,?,?,?,?,?)", (sub, archivo, v["nombre"], v["tipo"], len(datos), int(v["es_imagen"]),
                                                     usuario.get("nombre"), db.ahora()))
-            return dict(c.execute("SELECT * FROM adjuntos WHERE id=last_insert_rowid()").fetchone())
+            return dict(c.execute("SELECT * FROM archivos WHERE id=last_insert_rowid()").fetchone())
     except Exception:
         (destino_carpeta / archivo).unlink(missing_ok=True)
         raise
@@ -70,7 +70,7 @@ def subir(usuario: dict, *, sub: str, nombre, datos: bytes, permitidos=tuple(TIP
 def archivo(adjunto_id: int) -> dict:
     """Dónde está y cómo entregarlo. Quién lo puede bajar lo decide la ruta del módulo."""
     with db.transaccion() as c:
-        a = validar.fila(c, "SELECT * FROM adjuntos WHERE id=?", (adjunto_id,), "ese archivo")
+        a = validar.fila(c, "SELECT * FROM archivos WHERE id=?", (adjunto_id,), "ese archivo")
     ruta = carpeta(a["carpeta"]) / a["archivo"]
     if not ruta.is_file():
         raise NoEncontrado("El archivo no está en la carpeta de adjuntos.")
@@ -80,6 +80,6 @@ def archivo(adjunto_id: int) -> dict:
 def eliminar(adjunto_id: int) -> None:
     """Borra la fila y después el archivo. El módulo controla antes que nadie lo use."""
     with db.transaccion() as c:
-        a = validar.fila(c, "SELECT carpeta, archivo FROM adjuntos WHERE id=?", (adjunto_id,), "ese archivo")
-        c.execute("DELETE FROM adjuntos WHERE id=?", (adjunto_id,))
+        a = validar.fila(c, "SELECT carpeta, archivo FROM archivos WHERE id=?", (adjunto_id,), "ese archivo")
+        c.execute("DELETE FROM archivos WHERE id=?", (adjunto_id,))
     (carpeta(a["carpeta"]) / a["archivo"]).unlink(missing_ok=True)

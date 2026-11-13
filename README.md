@@ -68,8 +68,8 @@ una app, pasa a `modulos/` o al núcleo.
 
 | App | Repositorio | Estado |
 |---|---|---|
-| UltraMantenimiento | `super-duper-lamp` | todavía con su base propia (igualada con las otras); falta pasarla al núcleo |
-| Gestión Automotor APB | `gestionautomotorapb` | ídem |
-| Edificios de Mamá | `edificiosDeMama` | ídem |
+| UltraMantenimiento | `super-duper-lamp` | **sobre el núcleo** desde la 1.1.0 (módulo `mantenimiento`) |
+| Gestión Automotor APB | `gestionautomotorapb` | todavía con su base propia; falta pasarla al núcleo |
+| Edificios de Mamá | `edificiosDeMama` | todavía con su base propia; falta pasarla al núcleo |
 
-Ver `apps.json`.
+Ver `apps.json`. Para pasar una app al núcleo: **`docs/migrar_una_app.md`** (la receta de UltraMantenimiento).

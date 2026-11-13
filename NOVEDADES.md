@@ -1,5 +1,13 @@
 # Novedades de la base
 
+## Núcleo 1.0.1 (2026-11-13) — lo que pidió la primera app migrada (UltraMantenimiento 1.1.0)
+
+- La tabla de archivos del núcleo se llama `archivos` (no `adjuntos`): no choca con la tabla propia de una app.
+- `configurar(frontend=...)`: la carpeta propia de la app se sirve en `/static/app/` y su `icono.svg` es el ícono de fábrica.
+- La pantalla de Usuarios nombra el dato para entrar como diga la app (`LOGIN`: "Legajo", "Usuario"...).
+- `Nucleo.pestanas`: qué pestaña del menú se marca en una pantalla que no tiene la suya.
+- `docs/migrar_una_app.md` y `ejemplos/migracion_ultramantenimiento/`: la receta para pasar las otras apps.
+
 ## Núcleo 1.0.0 (2026-11-13) — la base como app
 
 La base pasa a ser una app que funciona sola (`python -m app`) y sobre la que se construyen las demás con módulos:
