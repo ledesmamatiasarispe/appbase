@@ -6,7 +6,8 @@ más apps, se convierte en un módulo de `modulos/` o pasa al núcleo.
 
 | Ejemplo | De qué app | Qué hace |
 |---|---|---|
-| `mapa_de_planta/` | UltraMantenimiento | Planos dibujados en la app (rectángulos, líneas, textos sobre grilla en metros) con elementos ubicados como puntos de colores según su estado. Editor con arrastrar, imanes a la grilla, propiedades. |
+| `croquis/` | UltraMantenimiento | **Motor de croquis paramétrico** como el de SolidWorks/Onshape, sin DOM: puntos compartidos, líneas, rectángulos, círculos, arcos y textos; restricciones (horizontal, paralela, tangente...), cotas que mandan, resolvedor Levenberg-Marquardt, grados de libertad, recortar/extender/equidistancia/simetría, imanes. Con sus pruebas (`node croquis_prueba.js`). |
+| `mapa_de_planta/` | UltraMantenimiento | El editor que usa el croquis (`mapa.js`) y Planos dibujados en la app (rectángulos, líneas, textos sobre grilla en metros) con elementos ubicados como puntos de colores según su estado. Editor con arrastrar, imanes a la grilla, propiedades. |
 | `horometro_por_tramos/` | UltraMantenimiento | Lecturas de un contador que se cambia (horómetro): tramos, coherencia dentro de cada tramo, y servicios por horas que se corren al contador nuevo. |
 | `imprimir_lista/` | UltraMantenimiento | Una hoja apaisada para imprimir con casilleros en blanco (hecho, fecha, quién, observaciones), oculta en pantalla. |
 | `grafico_svg/` | UltraMantenimiento | Gráfico de líneas o barras en SVG sin librerías. |

@@ -4,11 +4,11 @@
     "repo": "ledesmamatiasarispe/super-duper-lamp",
     "prefijo": "MANT",
     "puerto": 8095,
-    "nucleo": "1.0.1",
+    "nucleo": "1.1.0",
     "modulos": [
       "mantenimiento (equipos e instructivos, plan y cronograma, registros, horómetros, correctivos, personal, áreas, mapa de planta)"
     ],
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "GestionAutomotorAPB": {
     "repo": "ledesmamatiasarispe/gestionautomotorapb",
