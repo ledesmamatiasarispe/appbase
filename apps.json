@@ -1,0 +1,21 @@
+{
+  "_comentario": "Las apps que usan la base. La clave es version.APP de cada una. 'excluir': archivos de base/ que esa app NO toma (tiene su propia versión, con los mismos pasos).",
+  "UltraMantenimiento": {
+    "nombre": "UltraMantenimiento (Fundición Romero)",
+    "repo": "ledesmamatiasarispe/super-duper-lamp",
+    "pantalla_ajustes": "Opciones",
+    "excluir": []
+  },
+  "GestionAutomotorAPB": {
+    "nombre": "Gestión Automotor APB",
+    "repo": "ledesmamatiasarispe/gestionautomotorapb",
+    "pantalla_ajustes": "Opciones",
+    "excluir": []
+  },
+  "EdificiosDeMama": {
+    "nombre": "Edificios de Mamá (consorcios)",
+    "repo": "ledesmamatiasarispe/edificiosDeMama",
+    "pantalla_ajustes": "Administración",
+    "excluir": ["app/actualizador.py"]
+  }
+}
