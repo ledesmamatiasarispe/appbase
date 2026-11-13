@@ -1,21 +1,24 @@
 {
-  "_comentario": "Las apps que usan la base. La clave es version.APP de cada una. 'excluir': archivos de base/ que esa app NO toma (tiene su propia versión, con los mismos pasos).",
+  "_comentario": "Las apps hechas (o por hacerse) sobre el núcleo. 'nucleo': versión del núcleo que usa (null = todavía con su base propia). 'modulos': sus módulos de negocio, candidatos a módulos de appbase si otra app los necesita.",
   "UltraMantenimiento": {
-    "nombre": "UltraMantenimiento (Fundición Romero)",
     "repo": "ledesmamatiasarispe/super-duper-lamp",
-    "pantalla_ajustes": "Opciones",
-    "excluir": []
+    "prefijo": "MANT",
+    "puerto": 8095,
+    "nucleo": null,
+    "modulos": ["equipos e instructivos", "plan y cronograma", "registros", "horómetros", "correctivos", "personal", "áreas", "mapa de planta"]
   },
   "GestionAutomotorAPB": {
-    "nombre": "Gestión Automotor APB",
     "repo": "ledesmamatiasarispe/gestionautomotorapb",
-    "pantalla_ajustes": "Opciones",
-    "excluir": []
+    "prefijo": "AUTO",
+    "puerto": 8097,
+    "nucleo": null,
+    "modulos": ["clientes", "vehículos", "flotas", "pólizas", "compañías", "documentación", "alertas", "cronograma", "mail semanal", "historial", "importar otra instalación"]
   },
   "EdificiosDeMama": {
-    "nombre": "Edificios de Mamá (consorcios)",
     "repo": "ledesmamatiasarispe/edificiosDeMama",
-    "pantalla_ajustes": "Administración",
-    "excluir": ["app/actualizador.py"]
+    "prefijo": "EDIF",
+    "puerto": 8095,
+    "nucleo": null,
+    "modulos": ["consorcios y unidades", "personas", "proveedores", "expensas", "cobros", "saldos y morosos", "administración"]
   }
 }

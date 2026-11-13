@@ -1,82 +1,75 @@
 # App base
 
-Las herramientas y mejoras comunes de las apps hechas sobre la misma base (FastAPI + SQLite + JavaScript sin
-framework, una ventana .exe en Windows que se actualiza sola desde GitHub):
+La base común de las apps (UltraMantenimiento, Gestión Automotor APB, Edificios de Mamá…): FastAPI + SQLite +
+JavaScript sin framework, una ventana .exe en Windows que se actualiza sola desde GitHub.
 
-| App | Repositorio | Pantalla de ajustes |
-|---|---|---|
-| UltraMantenimiento (Fundición Romero) | `super-duper-lamp` | Opciones |
-| Gestión Automotor APB | `gestionautomotorapb` | Opciones |
-| Edificios de Mamá (consorcios) | `edificiosDeMama` | Administración |
+**La idea:** las apps se construyen **arriba** de la base sin modificarla. Lo común vive en `nucleo/` y lo propio de
+cada negocio en **módulos**. Como cada módulo es autocontenido (sus tablas, rutas, pantallas, menú y ayuda), dos apps
+se pueden fusionar activando los módulos de las dos sobre el mismo núcleo.
 
-La idea: una mejora de la base se hace una vez, se guarda acá, y se lleva a todas las apps copiando archivos.
-Lo propio de cada negocio (mantenimiento, pólizas, expensas) **no** va acá.
+```
+nucleo/       la base: NO se modifica en las apps (tests/test_nucleo_intacto.py lo controla)
+modulos/      módulos reutilizables; notas/ es el ejemplo mínimo, el molde para hacer uno nuevo
+app/          la app de ejemplo: version.py (su identidad) + main.py (el núcleo + sus módulos)
+ejemplos/     herramientas que nacieron en cada app, para reusar (ver ejemplos/README.md)
+herramientas/ compilar.py (el .exe y el .zip del release), sincronizar.py, manifiesto.py
+tests/        los del núcleo y los del módulo de ejemplo
+```
 
-## Qué tiene
+## Probarla
+
+```
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt -r requirements-dev.txt
+.venv\Scripts\python.exe -m pytest -q
+.venv\Scripts\python.exe -m app            (http://localhost:8090, usuario admin / admin)
+```
+
+## Qué trae el núcleo
 
 | Archivo | Qué hace |
 |---|---|
-| `base/app/marca.py` | Nombre y logo de la app, editables desde la pantalla de ajustes (barra, ingreso y pestaña del navegador). El logo se valida por su contenido, no solo por la extensión. |
-| `base/app/puerto.py` | Puerto editable desde la pantalla de ajustes. Al arrancar: si el puerto lo usa otro programa, toma el siguiente libre; si la app ya estaba abierta, solo abre el navegador. |
-| `base/app/rutas_base.py` | La página (con `?v=VERSION` para que después de actualizar no haga falta Ctrl+F5, y con el nombre y logo elegidos), `/api/version`, `/api/marca*` y `/api/puerto`. |
-| `base/app/actualizador.py` | Actualización desde los releases de GitHub (solo Windows, versión compilada): controla el SHA-256, funciona con antivirus o proxy que revisan HTTPS (certificados del sistema + certifi), copia la base antes de instalar (quedan las últimas 3) y, si la copia del programa falla, vuelve a poner el anterior. |
-| `base/frontend/comun.js` + `comun.css` | Banner amarillo de contraseña provisoria (no bloquea la app), cambio de contraseña y las tarjetas Contraseña, Puerto y Nombre y logo. |
-| `base/tests/test_base.py` | Los tests de todo lo anterior. |
+| `ajustes.py` | La identidad de la app (APP, NOMBRE, PREFIJO, PUERTO, VERSION, REPO): la pone la app con `nucleo.configurar(...)`. |
+| `db.py` | SQLite: `transaccion()` con `BEGIN IMMEDIATE` (varios usuarios escriben de a uno, sin "database is locked") y reentrante con `SAVEPOINT`; aplica el esquema y las columnas nuevas de cada módulo; administrador inicial `admin`/`admin`. |
+| `errores.py`, `validar.py` | `ErrorDeNegocio` (400) y `NoEncontrado` (404); validaciones de campo sobre el texto crudo del formulario. |
+| `auth.py`, `usuarios.py` | Sesiones con token, PBKDF2, administrador sí/no; siempre queda un administrador. La contraseña provisoria **no bloquea**: aviso amarillo hasta cambiarla. `usuarios.AL_GUARDAR` avisa a los módulos. |
+| `adjuntos.py` | Archivos subidos validados por su contenido (firma), con nombre aleatorio. |
+| `marca.py` | Nombre y logo editables desde Opciones. |
+| `puerto.py` | Puerto editable; si está ocupado arranca en el siguiente libre; si la app ya estaba abierta, solo abre el navegador. |
+| `actualizador.py` | Releases de GitHub: SHA-256, certificados del sistema + certifi (antivirus/proxy), copia de la base antes de instalar, y si la copia del programa falla vuelve a poner el anterior. |
+| `modulo.py`, `aplicacion.py`, `arranque.py` | El contrato de un módulo, `crear_app(modulos)` y el `python -m app` / `.exe`. |
+| `frontend/` | La página (se arma con el menú y los archivos de cada módulo, con `?v=VERSION`), `nucleo.js` (API, modal, sesión, navegación, Opciones, Usuarios), `ayuda.js` (Ayuda por pantalla y Tour, con los pasos que trae cada módulo) y los estilos. |
 
-## Qué pone cada app
+## Hacer una app nueva
 
-En `app/version.py`:
+1. Copiar `nucleo/`, `app/`, `herramientas/`, `.github/`, `requirements*.txt`, `iniciar.bat` y `tests/conftest.py`.
+2. En `app/version.py`, su identidad (APP, NOMBRE, PREFIJO, PUERTO, REPO).
+3. Hacer sus módulos en `modulos/<nombre>/` copiando `modulos/notas` y listarlos en `app/main.py`.
+4. Publicar: subir `VERSION`, crear y empujar el tag `v<VERSION>`; GitHub Actions compila y arma el release.
 
-```python
-VERSION = "1.0.0"
-REPO = os.environ.get("<PREFIJO>_REPO", "usuario/repositorio")
-APP = "MiApp"            # identificador fijo (User-Agent, /api/version, nombre del .exe). No es el que se cambia en ajustes.
-NOMBRE = "Mi App"        # nombre de fábrica que muestra la página
-PREFIJO = "MIAPP"        # de las variables de entorno: MIAPP_DB, MIAPP_PUERTO, MIAPP_REPO...
-PUERTO = 8095            # el de fábrica
-COMPILADA = bool(getattr(sys, "frozen", False))
-```
+## Hacer un módulo
 
-Además:
+Copiar `modulos/notas` (cada archivo explica su parte). Reglas para que los módulos se puedan fusionar:
+- tablas con nombre propio, rutas bajo `/api/<módulo>/`, pantallas y funciones de JavaScript con nombre propio;
+- las reglas de negocio en `servicios.py` (cada caso de uso, una transacción); las rutas delgadas;
+- la ayuda de cada pantalla en `Ayuda.pasos.<vista>` y sus pasos del Tour en `Ayuda.tour`.
 
-- `app/db.py` con `DB_PATH`, `conectar()`, `transaccion()` y una tabla `config (clave TEXT PRIMARY KEY, valor TEXT)`.
-- `app/auth.py` con `usuario_actual` y `solo_admin` (dependencias de FastAPI); `usuario_actual` **no** bloquea una
-  contraseña provisoria (`debe_cambiar`): el aviso lo pone `comun.js`.
-- `ErrorDeNegocio` y `NoEncontrado` en `app/servicios.py` (o en `app/validar.py`).
-- En `main.py`: `app.include_router(rutas_base.router)` y `"/"` servido con `rutas_base.pagina(FRONTEND / "index.html")`.
-- En `__main__.py`: `puerto, ya_abierta = puerto.al_arrancar()` (ver cualquiera de las tres apps).
-- En `index.html`: `comun.css` y `comun.js` (después de `app.js`); la marca con `/static/icono.svg` y/o `/static/logo.svg`.
-- En `app.js`: `S`, `$`, `esc`, `api`, `avisar`, `abrirModal`, `cerrarModal`, `irA`, y
-  `const PANTALLA_AJUSTES = { vista: 'opciones', titulo: 'Opciones' };`. `entrar()` llama a `bannerPassword()`,
-  `salir()` a `quitarBannerPassword()`, y la pantalla de ajustes pone `${await tarjetasBase()}` y después
-  `activarTarjetasBase()`.
-- En los tests: la fixture `api` (en `tests/test_api.py`) o `cliente` (en `conftest.py`) con el administrador logueado.
+## Mejorar el núcleo
 
-## Lo que es igual en lógica pero vive en el `db.py` de cada app
+Se hace **acá**, nunca en una app:
+1. Cambiar `nucleo/`, con sus tests, subir `VERSION_NUCLEO` (`nucleo/__init__.py`), correr `herramientas/manifiesto.py`
+   y anotar el cambio en `NOVEDADES.md`.
+2. Llevarlo a cada app: `python herramientas/sincronizar.py <carpeta de la app> --llevar`, correr sus tests y publicarla.
 
-`transaccion()` con `BEGIN IMMEDIATE` + `busy_timeout` (varios usuarios escriben de a uno, sin "database is locked") y
-reentrante con `SAVEPOINT`. `executescript` va fuera de la transacción porque confirma solo. Está igual en las tres;
-pasarlo a un archivo común está pendiente.
+Una herramienta que nace en una app (por ejemplo, el mapa de planta) se guarda en `ejemplos/` y, cuando la usa más de
+una app, pasa a `modulos/` o al núcleo.
 
-## Cómo se usa
+## Las apps
 
-```
-python herramientas/sincronizar.py <carpeta de la app>            # qué difiere (no toca nada)
-python herramientas/sincronizar.py <carpeta de la app> --llevar   # base -> app: la app recibe las mejoras
-python herramientas/sincronizar.py <carpeta de la app> --traer    # app -> base: una mejora hecha en una app
-```
+| App | Repositorio | Estado |
+|---|---|---|
+| UltraMantenimiento | `super-duper-lamp` | todavía con su base propia (igualada con las otras); falta pasarla al núcleo |
+| Gestión Automotor APB | `gestionautomotorapb` | ídem |
+| Edificios de Mamá | `edificiosDeMama` | ídem |
 
-1. Una mejora de la base se hace en una app (con sus tests), se trae acá con `--traer` y se anota en `NOVEDADES.md`.
-2. Se lleva a las otras con `--llevar` y se corren sus tests (`tests/test_base.py` incluido).
-3. Cada app publica su versión como siempre.
-
-`apps.json` lista las apps y qué archivos no toma cada una (Edificios de Mamá tiene su propio actualizador porque
-también se instala desde el código fuente y en Linux/Mac; tiene las mismas mejoras).
-
-## Pendiente
-
-- Importar los datos de otra instalación (hoy solo en Gestión Automotor).
-- Ayuda por pantalla y Tour (UltraMantenimiento y Gestión Automotor) para Edificios de Mamá, y el chequeo de pasos
-  huérfanos de la Ayuda en las tres.
-- Historial de cambios y mail semanal (hoy solo en Gestión Automotor).
-- `transaccion()` en un archivo común.
+Ver `apps.json`.

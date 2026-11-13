@@ -1,0 +1,16 @@
+/* Extraído de UltraMantenimiento frontend/styles.css */
+/* lista del mes para imprimir (Inicio): oculta en pantalla, apaisada en papel y con casilleros para completar a mano */
+.hoja-lista { display: none; }
+@page lista { size: A4 landscape; margin: 10mm; }
+@media print {
+  body.imprimiendo-lista #vista > :not(.hoja-lista) { display: none !important; }
+  body.imprimiendo-lista .hoja-lista { display: block; page: lista; }
+  .hoja-lista h2 { margin: 0 0 .2rem; }
+  .hoja-lista table { font-size: 9.5pt; }
+  .hoja-lista th, .hoja-lista td { border: 1px solid #8a96a3; padding: .35rem .4rem; }
+  .hoja-lista tr { break-inside: avoid; }
+  .hoja-lista thead { display: table-header-group; }
+  .hoja-lista td.casilla { text-align: center; font-size: 13pt; }
+  .hoja-lista th.fecha { width: 9%; } .hoja-lista th.realizo { width: 12%; } .hoja-lista th.obs { width: 26%; }
+}
+

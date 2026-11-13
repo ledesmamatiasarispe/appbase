@@ -1,38 +1,53 @@
-"""Compara la base (carpeta base/) con una app y, si se pide, copia en un sentido o en el otro.
+"""Lleva el núcleo (y, si se pide, módulos reutilizables) de appbase a una app.
 
-    python herramientas/sincronizar.py <carpeta de la app>             solo muestra qué difiere (no toca nada)
-    python herramientas/sincronizar.py <carpeta de la app> --llevar    copia base/ -> app (la app recibe las mejoras)
-    python herramientas/sincronizar.py <carpeta de la app> --traer     copia app -> base/ (una mejora hecha en la app)
+    python herramientas/sincronizar.py <carpeta de la app>                     muestra qué cambiaría (no toca nada)
+    python herramientas/sincronizar.py <carpeta de la app> --llevar            copia nucleo/ entero a la app
+    python herramientas/sincronizar.py <carpeta de la app> --modulo notas      copia también modulos/notas
 
-La app se reconoce por APP = "..." en su app/version.py, y apps.json dice qué archivos no toma. Después de --llevar,
-correr en la app sus tests (tests/test_base.py incluido); después de --traer, llevar la mejora a las otras apps."""
+El núcleo se copia ENTERO (lo que la app tenga en nucleo/ y appbase no, se borra): la app no lo modifica, así que no
+hay nada propio que perder. Si la app lo tocó a mano, se avisa y no se copia (hay que llevar ese cambio a appbase
+primero). Junto con el núcleo va tests/test_nucleo_intacto.py. Después: correr los tests de la app y publicar."""
 import filecmp
 import json
-import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-BASE = RAIZ / "base"
+TEST_INTACTO = '''"""El núcleo de esta app es el de appbase, sin cambios a mano. Si falla: el cambio va en appbase y se trae con
+herramientas/sincronizar.py (así no se pierde en la próxima sincronización ni se separa de las otras apps)."""
+from nucleo import intacto
 
 
-def archivos_base() -> list[str]:
-    return sorted(p.relative_to(BASE).as_posix() for p in BASE.rglob("*") if p.is_file() and "__pycache__" not in p.parts)
+def test_nucleo_sin_cambios_a_mano():
+    assert intacto.cambios() == []
+'''
 
 
-def identificar(app: Path) -> str:
-    version = app / "app" / "version.py"
-    if not version.is_file():
-        sys.exit(f"{app} no parece una app de la base: falta app/version.py.")
-    m = re.search(r'^APP\s*=\s*(?:"([^"]+)"|([A-Z_]+))', version.read_text(encoding="utf-8"), re.M)
-    if not m:
-        sys.exit(f"{version} no define APP: agregarlo (ver README, 'Qué pone cada app').")
-    if m.group(1):
-        return m.group(1)
-    # APP = OTRA_CONSTANTE (Gestión Automotor: APP = EXE_NOMBRE)
-    otra = re.search(rf'^{m.group(2)}\s*=\s*"([^"]+)"', version.read_text(encoding="utf-8"), re.M)
-    return otra.group(1) if otra else m.group(2)
+def diferencias(origen: Path, destino: Path) -> list[str]:
+    if not destino.exists():
+        return ["(no existe en la app)"]
+    c = filecmp.dircmp(origen, destino, ignore=["__pycache__"])
+    salida = []
+
+    def recorrer(d, prefijo=""):
+        salida.extend(f"cambia: {prefijo}{f}" for f in d.diff_files)
+        salida.extend(f"nuevo: {prefijo}{f}" for f in d.left_only)
+        salida.extend(f"se borra: {prefijo}{f}" for f in d.right_only)
+        for nombre, sub in d.subdirs.items():
+            recorrer(sub, f"{prefijo}{nombre}/")
+
+    recorrer(c)
+    return salida
+
+
+def tocado_a_mano(app: Path) -> list[str]:
+    if not (app / "nucleo" / "intacto.py").exists():
+        return []
+    r = subprocess.run([sys.executable, "-c", "from nucleo import intacto; print('\\n'.join(intacto.cambios()))"],
+                       cwd=app, capture_output=True, text=True)
+    return [x for x in r.stdout.splitlines() if x.strip()]
 
 
 def main() -> None:
@@ -41,45 +56,34 @@ def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     app = Path(sys.argv[1]).resolve()
-    llevar, traer = "--llevar" in sys.argv, "--traer" in sys.argv
-    if llevar and traer:
-        sys.exit("--llevar o --traer, no los dos.")
-    apps = json.loads((RAIZ / "apps.json").read_text(encoding="utf-8"))
-    nombre = identificar(app)
-    datos = apps.get(nombre)
-    if datos is None:
-        sys.exit(f"{nombre} no está en apps.json: agregarlo antes.")
-    print(f"{datos['nombre']} ({app})")
-    distintos = []
-    for rel in archivos_base():
-        if rel in datos["excluir"]:
-            print(f"  {rel:28} (no la toma: tiene la suya)")
-            continue
-        en_app = app / rel
-        if not en_app.exists():
-            estado = "FALTA en la app"
-        elif filecmp.cmp(BASE / rel, en_app, shallow=False):
-            estado = "igual"
-        else:
-            estado = "DISTINTO"
-        print(f"  {rel:28} {estado}")
-        if estado != "igual":
-            distintos.append(rel)
-    if not distintos:
-        print("Todo igual.")
-        return
+    llevar = "--llevar" in sys.argv
+    modulos = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--modulo" and i + 1 < len(sys.argv)]
+    if not (app / "app").is_dir():
+        sys.exit(f"{app} no parece una app (falta la carpeta app/).")
+    version = json.loads((RAIZ / "nucleo" / "MANIFIESTO.json").read_text(encoding="utf-8"))["version"]
+    print(f"Núcleo {version} -> {app}")
+    tocado = tocado_a_mano(app)
+    if tocado:
+        print("  La app MODIFICÓ su núcleo a mano:\n    " + "\n    ".join(tocado))
+        print("  Primero llevar esos cambios a appbase (o descartarlos); no se copia nada.")
+        sys.exit(1)
+    partes = [("nucleo", RAIZ / "nucleo", app / "nucleo")] + [(f"modulos/{m}", RAIZ / "modulos" / m, app / "modulos" / m) for m in modulos]
+    for nombre, origen, destino in partes:
+        if not origen.is_dir():
+            sys.exit(f"No existe {nombre} en appbase.")
+        cambios = diferencias(origen, destino)
+        print(f"  {nombre}: " + ("igual" if not cambios else "\n    " + "\n    ".join(cambios)))
+        if llevar and cambios:
+            shutil.rmtree(destino, ignore_errors=True)
+            shutil.copytree(origen, destino, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     if llevar:
-        for rel in distintos:
-            (app / rel).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(BASE / rel, app / rel)
-        print(f"Copiados a la app: {', '.join(distintos)}. Correr sus tests.")
-    elif traer:
-        for rel in distintos:
-            if (app / rel).exists():
-                shutil.copyfile(app / rel, BASE / rel)
-        print(f"Traídos a la base: {', '.join(d for d in distintos if (app / d).exists())}. Llevarlos a las otras apps.")
+        (app / "modulos").mkdir(exist_ok=True)
+        (app / "modulos" / "__init__.py").touch()
+        (app / "tests").mkdir(exist_ok=True)
+        (app / "tests" / "test_nucleo_intacto.py").write_text(TEST_INTACTO, encoding="utf-8")
+        print("Copiado. Correr los tests de la app.")
     else:
-        print("No se copió nada (--llevar o --traer para copiar).")
+        print("No se copió nada (--llevar para copiar).")
 
 
 if __name__ == "__main__":
