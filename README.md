@@ -12,7 +12,8 @@ nucleo/       la base: NO se modifica en las apps (tests/test_nucleo_intacto.py 
 modulos/      módulos reutilizables; notas/ es el ejemplo mínimo, el molde para hacer uno nuevo
 app/          la app de ejemplo: version.py (su identidad) + main.py (el núcleo + sus módulos)
 ejemplos/     herramientas que nacieron en cada app, para reusar (ver ejemplos/README.md)
-herramientas/ compilar.py (el .exe y el .zip del release), sincronizar.py, manifiesto.py
+herramientas/ compilar.py (el .exe y el .zip del release), sincronizar.py, manifiesto.py, contrato.py
+docs/         reglas.md (cómo trabajar sin romper otras apps), contrato.json, migrar_una_app.md
 tests/        los del núcleo y los del módulo de ejemplo
 ```
 
@@ -55,6 +56,9 @@ Copiar `modulos/notas` (cada archivo explica su parte). Reglas para que los mód
 - la ayuda de cada pantalla en `Ayuda.pasos.<vista>` y sus pasos del Tour en `Ayuda.tour`.
 
 ## Mejorar el núcleo
+
+**Antes de tocar nada, leer [`docs/reglas.md`](docs/reglas.md)**: dónde va cada cambio, el contrato del núcleo
+([`docs/contrato.json`](docs/contrato.json)) y cómo publicar sin romper otras apps.
 
 Se hace **acá**, nunca en una app:
 1. Cambiar `nucleo/`, con sus tests, subir `VERSION_NUCLEO` (`nucleo/__init__.py`), correr `herramientas/manifiesto.py`

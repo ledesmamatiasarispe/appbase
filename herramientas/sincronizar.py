@@ -6,7 +6,8 @@
 
 El núcleo se copia ENTERO (lo que la app tenga en nucleo/ y appbase no, se borra): la app no lo modifica, así que no
 hay nada propio que perder. Si la app lo tocó a mano, se avisa y no se copia (hay que llevar ese cambio a appbase
-primero). Junto con el núcleo va tests/test_nucleo_intacto.py. Después: correr los tests de la app y publicar."""
+primero). Junto con el núcleo van tests/test_nucleo_intacto.py y tests/test_pantallas.py (app/main.py tiene que
+definir MODULOS). Después: correr los tests de la app, abrirla en el navegador y publicar (ver docs/reglas.md)."""
 import filecmp
 import json
 import shutil
@@ -15,6 +16,21 @@ import sys
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
+TEST_PANTALLAS = '''"""Las pantallas cargan sin errores: carga los scripts del núcleo y de los módulos (sin navegador) y detecta nombres
+globales repetidos, errores al cargar y pestañas sin pantalla, que en el navegador fallan en silencio. Lo trae
+herramientas/sincronizar.py de appbase; se saltea si la PC no tiene Node."""
+import pytest
+
+import app.main
+from nucleo import chequeo
+
+
+def test_las_pantallas_cargan_sin_errores():
+    errores = chequeo.pantallas(app.main.MODULOS)
+    if errores is None:
+        pytest.skip("No hay Node en esta PC.")
+    assert errores == []
+'''
 TEST_INTACTO = '''"""El núcleo de esta app es el de appbase, sin cambios a mano. Si falla: el cambio va en appbase y se trae con
 herramientas/sincronizar.py (así no se pierde en la próxima sincronización ni se separa de las otras apps)."""
 from nucleo import intacto
@@ -81,6 +97,7 @@ def main() -> None:
         (app / "modulos" / "__init__.py").touch()
         (app / "tests").mkdir(exist_ok=True)
         (app / "tests" / "test_nucleo_intacto.py").write_text(TEST_INTACTO, encoding="utf-8")
+        (app / "tests" / "test_pantallas.py").write_text(TEST_PANTALLAS, encoding="utf-8")
         print("Copiado. Correr los tests de la app.")
     else:
         print("No se copió nada (--llevar para copiar).")

@@ -1,5 +1,14 @@
 # Novedades de la base
 
+## Núcleo 1.1.0 (2026-11-13) — reglas, contrato y chequeo de pantallas
+
+- `docs/reglas.md`: dónde va cada cambio y cómo publicar sin romper otras apps.
+- `nucleo/contrato.py` + `docs/contrato.json` + `herramientas/contrato.py`: lo que el núcleo ofrece a los módulos,
+  extraído del código. Sacar o cambiar algo exige un núcleo 2.0 (la herramienta no lo guarda si no).
+- `nucleo/chequeo`: carga las pantallas sin navegador (Node) y detecta nombres globales repetidos, errores al cargar y
+  pestañas sin pantalla. `sincronizar.py` lleva a cada app `tests/test_pantallas.py` (necesita `MODULOS` en `app/main.py`).
+- Compatible con 1.0.x: no se sacó ni cambió nada.
+
 ## Núcleo 1.0.1 (2026-11-13) — lo que pidió la primera app migrada (UltraMantenimiento 1.1.0)
 
 - La tabla de archivos del núcleo se llama `archivos` (no `adjuntos`): no choca con la tabla propia de una app.
