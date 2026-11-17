@@ -8,7 +8,7 @@ from pathlib import Path
 
 from nucleo.modulo import Menu, Modulo
 
-from . import servicios
+from . import asistente, servicios  # noqa: F401  (asistente: lo que la barra de preguntas sabe de las notas)
 from .rutas import router
 
 ESQUEMA = """

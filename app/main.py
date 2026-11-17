@@ -9,8 +9,8 @@ from . import version as v
 nucleo.configurar(app=v.APP, nombre=v.NOMBRE, prefijo=v.PREFIJO, puerto=v.PUERTO, version=v.VERSION, repo=v.REPO,
                   subtitulo=v.SUBTITULO, login=v.LOGIN, raiz=Path(__file__).resolve().parent.parent)
 
-from modulos import notas  # noqa: E402  (después de configurar)
+from modulos import asistente, notas  # noqa: E402  (después de configurar)
 from nucleo.aplicacion import crear_app  # noqa: E402
 
-MODULOS = [notas.MODULO]
+MODULOS = [notas.MODULO, asistente.MODULO]
 app = crear_app(MODULOS)

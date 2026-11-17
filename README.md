@@ -55,6 +55,15 @@ Copiar `modulos/notas` (cada archivo explica su parte). Reglas para que los mód
 - las reglas de negocio en `servicios.py` (cada caso de uso, una transacción); las rutas delgadas;
 - la ayuda de cada pantalla en `Ayuda.pasos.<vista>` y sus pasos del Tour en `Ayuda.tour`.
 
+## Módulos listos para sumar
+
+- **`modulos/asistente`** — la barra "Preguntá algo" arriba de todo, con micrófono donde el navegador lo permite
+  (en el celular, el del teclado). Lo exacto (listas, cuentas, vencimientos) lo contesta la app; lo demás lo redacta una
+  IA local (Ollama, sin internet) con los datos que junta cada módulo; sin IA, muestra un resumen. Cada módulo le enseña
+  lo suyo con una `Fuente` (molde: `modulos/notas/asistente.py`). Se trae con
+  `python herramientas/sincronizar.py <app> --modulo asistente --llevar` y se suma a `MODULOS` en `app/main.py`.
+  La IA se instala aparte: Ollama + un modelo chico (`ollama pull qwen2.5:3b`); se configura en Opciones.
+
 ## Mejorar el núcleo
 
 **Antes de tocar nada, leer [`docs/reglas.md`](docs/reglas.md)**: dónde va cada cambio, el contrato del núcleo
