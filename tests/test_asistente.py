@@ -101,6 +101,78 @@ def test_si_la_ia_se_cae_a_mitad_muestra_el_resumen(api, ollama_falso):
     assert texto(evs).startswith("Empiezo") and "rompete por favor" in texto(evs)
 
 
+def test_ayuda_y_saludo(sin_ia):
+    for q in ("ayuda", "Hola", "¿qué puedo preguntar?"):
+        inicio, texto = preguntar(sin_ia, q)[0], texto_de(preguntar(sin_ia, q))
+        assert inicio["modo"] == "directa" and inicio["titulo"] == "Ayuda" and "barra de preguntas" in texto
+        assert {"texto": "¿Cuántas notas hay?", "accion": "preguntar", "datos": {"pregunta": "¿Cuántas notas hay?"}} in inicio["enlaces"]
+
+
+AYUDA = [{"pantalla": "notas", "titulo": "Nueva nota", "texto": "Para cargar una nota: botón Nueva nota, título y texto."},
+         {"pantalla": "usuarios", "titulo": "Usuarios", "texto": "Para dar de alta a alguien: Nuevo usuario."}]
+
+
+def test_preguntas_de_uso_con_la_ayuda_de_las_pantallas(sin_ia):
+    r = sin_ia.post("/api/asistente/preguntar", json={"pregunta": "¿Cómo cargo una nota?", "ayuda": AYUDA})
+    evs = eventos(r)
+    assert evs[0]["titulo"] == "Cómo se usa la app" and "botón Nueva nota" in texto(evs)
+    assert "Nuevo usuario" not in texto(evs)                       # solo los pasos que vienen al caso
+    assert {"texto": "Ir a notas", "ir": "notas"} in evs[0]["enlaces"]
+    # sin la ayuda de la pantalla, o algo que no está en ella, no inventa
+    sin = eventos(sin_ia.post("/api/asistente/preguntar", json={"pregunta": "¿Cómo cargo un vuelo a Marte?", "ayuda": AYUDA}))
+    assert sin[0]["modo"] == "nada" and "ayuda" in texto(sin)
+
+
+def test_si_no_figura_y_sin_resultado(api, ollama_falso):
+    from modulos.asistente import Fuente, registrar, servicios
+    registrar(Fuente("prueba", contexto=lambda q: {"titulo": "X", "datos": "nada", "resumen": "nada",
+                                                    "si_no_figura": {"texto": "¿Lo sabés?", "enlace": {"texto": "Cargarlo", "accion": "cargar"}}}
+                     if "zapallo" in q else None,
+                     sin_resultado=lambda q: {"texto": "No hay nada cargado sobre eso.", "enlaces": [{"texto": "Cargar", "accion": "cargar"}]}))
+    try:
+        evs = preguntar(api, "¿de qué color es el zapallo?")
+        assert evs[0]["si_no_figura"]["enlace"]["accion"] == "cargar"
+        evs = preguntar(api, "¿qwerty asdfg?")
+        assert evs[0]["modo"] == "nada" and texto(evs) == "No hay nada cargado sobre eso." and evs[0]["enlaces"][0]["accion"] == "cargar"
+    finally:
+        servicios.FUENTES[:] = [f for f in servicios.FUENTES if f.nombre != "prueba"]
+
+
+def texto_de(evs):
+    return texto(evs)
+
+
+def test_reiniciar_la_ia(api, ollama_falso, monkeypatch, tmp_path):
+    """Se cierra y se abre Ollama (simulado: el test no toca procesos reales) y se espera a que vuelva a responder."""
+    from modulos.asistente import servicios
+    hecho = []
+    monkeypatch.setattr(servicios, "_carpeta_ollama", lambda: tmp_path)
+    monkeypatch.setattr(servicios, "_cerrar_ollama", lambda c: hecho.append(("cerrar", c)))
+    monkeypatch.setattr(servicios, "_abrir_ollama", lambda c: hecho.append(("abrir", c)))
+    monkeypatch.setattr(servicios.time, "sleep", lambda s: None)
+    # la IA de la prueba está en 127.0.0.1: se puede reiniciar desde acá
+    r = api.post("/api/asistente/reiniciar")
+    assert r.status_code == 200 and r.json()["disponible"], r.text
+    assert hecho == [("cerrar", tmp_path), ("abrir", tmp_path)]
+
+    monkeypatch.setattr(servicios, "_carpeta_ollama", lambda: None)
+    assert "No se encontró Ollama" in error(api.post("/api/asistente/reiniciar"))
+    api.put("/api/asistente/ajustes", json={"url": "http://192.168.0.50:11434", "modelo": "x"})
+    assert "otra PC" in error(api.post("/api/asistente/reiniciar"))
+
+
+def test_si_no_vuelve_a_responder_avisa(sin_ia, monkeypatch, tmp_path):
+    from modulos.asistente import servicios
+    monkeypatch.setattr(servicios, "_carpeta_ollama", lambda: tmp_path)
+    monkeypatch.setattr(servicios, "_cerrar_ollama", lambda c: None)
+    monkeypatch.setattr(servicios, "_abrir_ollama", lambda c: None)
+    monkeypatch.setattr(servicios.time, "sleep", lambda s: None)
+    monkeypatch.setattr(servicios, "estado", lambda forzar=False: {"disponible": False, "modelos": []})
+    reloj = iter(range(0, 1000, 10))
+    monkeypatch.setattr(servicios.time, "time", lambda: next(reloj))
+    assert "no respondió" in error(sin_ia.post("/api/asistente/reiniciar"))
+
+
 def test_validaciones_y_permisos(api):
     assert "pregunta" in error(api.post("/api/asistente/preguntar", json={"pregunta": "   "}))
     assert error(api.post("/api/asistente/preguntar", json={"pregunta": "x" * 301}))
@@ -113,3 +185,4 @@ def test_validaciones_y_permisos(api):
     api.headers["Authorization"] = "Bearer " + api.post("/api/auth/login", json={"usuario": "ana", "password": "clave-ana"}).json()["token"]
     assert api.get("/api/asistente/estado").status_code == 200
     assert api.put("/api/asistente/ajustes", json={"url": "http://x"}).status_code == 403
+    assert api.post("/api/asistente/reiniciar").status_code == 403

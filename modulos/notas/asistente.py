@@ -22,7 +22,7 @@ def responder(pregunta: str) -> dict | None:
 
 def contexto(pregunta: str) -> dict | None:
     """Con IA: las notas que comparten palabras con la pregunta, en un texto corto que la IA lee."""
-    palabras = {p for p in re.findall(r"[a-z0-9]+", _norm(pregunta)) if len(p) >= 4}
+    palabras = {p for p in re.findall(r"[a-z0-9]+", _norm(pregunta)) if len(p) >= 5}   # no "como", "para", "esta"...
     halladas = [n for n in servicios.listar() if palabras & set(re.findall(r"[a-z0-9]+", _norm(n["titulo"] + " " + n["texto"])))]
     if not halladas:
         return None
@@ -37,4 +37,4 @@ try:
 except ImportError:
     registrar = None
 if registrar:
-    registrar(Fuente("notas", responder=responder, contexto=contexto))
+    registrar(Fuente("notas", responder=responder, contexto=contexto, ejemplos=["¿Cuántas notas hay?"]))

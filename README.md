@@ -59,8 +59,11 @@ Copiar `modulos/notas` (cada archivo explica su parte). Reglas para que los mód
 
 - **`modulos/asistente`** — la barra "Preguntá algo" arriba de todo, con micrófono donde el navegador lo permite
   (en el celular, el del teclado). Lo exacto (listas, cuentas, vencimientos) lo contesta la app; lo demás lo redacta una
-  IA local (Ollama, sin internet) con los datos que junta cada módulo; sin IA, muestra un resumen. Cada módulo le enseña
-  lo suyo con una `Fuente` (molde: `modulos/notas/asistente.py`). Se trae con
+  IA local (Ollama, sin internet) con los datos que junta cada módulo; sin IA, muestra un resumen. Contesta "ayuda" con
+  ejemplos y "¿cómo cargo…?" con los textos de la Ayuda de las pantallas. Cada módulo le enseña lo suyo con una `Fuente`
+  (molde: `modulos/notas/asistente.py`): `responder`, `contexto` (con `si_no_figura` para ofrecer cargar lo que falta),
+  `sin_resultado` y `ejemplos`; las respuestas pueden traer botones que abren pantallas o formularios del módulo
+  (`window.asisAcciones`). Opciones tiene "Reiniciar la IA". Se trae con
   `python herramientas/sincronizar.py <app> --modulo asistente --llevar` y se suma a `MODULOS` en `app/main.py`.
   La IA se instala aparte: Ollama + un modelo chico (`ollama pull qwen2.5:3b`); se configura en Opciones.
 
