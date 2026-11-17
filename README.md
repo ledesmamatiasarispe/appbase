@@ -62,7 +62,9 @@ Copiar `modulos/notas` (cada archivo explica su parte). Reglas para que los mód
   IA local (Ollama, sin internet) con los datos que junta cada módulo; sin IA, muestra un resumen. Contesta "ayuda" con
   ejemplos y "¿cómo cargo…?" con los textos de la Ayuda de las pantallas. Cada módulo le enseña lo suyo con una `Fuente`
   (molde: `modulos/notas/asistente.py`): `responder`, `contexto` (con `si_no_figura` para ofrecer cargar lo que falta),
-  `sin_resultado` y `ejemplos`; las respuestas pueden traer botones que abren pantallas o formularios del módulo
+  `sin_resultado`, `ejemplos` y `temas` (de qué cosa habla la pregunta: con eso la conversación sigue el tema, "¿y
+  cuántas horas tiene?" después de nombrar una máquina; la IA además recibe las últimas preguntas, con tope de
+  caracteres); las respuestas pueden traer botones que abren pantallas o formularios del módulo
   (`window.asisAcciones`). Opciones tiene "Reiniciar la IA". Se trae con
   `python herramientas/sincronizar.py <app> --modulo asistente --llevar` y se suma a `MODULOS` en `app/main.py`.
   La IA se instala aparte: Ollama + un modelo chico (`ollama pull qwen2.5:3b`); se configura en Opciones.

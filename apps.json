@@ -9,7 +9,7 @@
       "mantenimiento (equipos e instructivos, plan y cronograma, registros, horómetros, correctivos, personal, áreas, mapa de planta)",
       "asistente (de appbase)"
     ],
-    "version": "1.4.0"
+    "version": "1.5.0"
   },
   "GestionAutomotorAPB": {
     "repo": "ledesmamatiasarispe/gestionautomotorapb",

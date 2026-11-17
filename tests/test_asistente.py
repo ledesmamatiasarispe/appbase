@@ -94,6 +94,41 @@ def test_con_ia_redacta_con_los_datos(api, ollama_falso):
     assert ollama_falso[-1]["model"] == "modelo-falso:1b" and ollama_falso[-1]["stream"] is True
 
 
+def test_la_conversacion_sigue_el_tema(sin_ia):
+    sin_ia.post("/api/notas", json={"titulo": "Guantes", "texto": "Comprar guantes de cuero para el taller"})
+    primera = preguntar(sin_ia, "¿qué hay que hacer con los guantes?")[0]
+    assert primera["tema"] == "Guantes" and primera["sigue"] is None
+    charla = [{"pregunta": "¿qué hay que hacer con los guantes?", "respuesta": "Comprar guantes de cuero.", "tema": "Guantes"}]
+
+    # "¿y para cuándo?" no nombra nada: se contesta sobre lo que se venía hablando, y se avisa
+    evs = eventos(sin_ia.post("/api/asistente/preguntar", json={"pregunta": "¿y para cuándo?", "historial": charla}))
+    assert evs[0]["sigue"] == "Guantes" and evs[0]["modo"] == "resumen" and "Comprar guantes" in texto(evs)
+    # "Preguntar en general": sin pegarle el tema
+    evs = eventos(sin_ia.post("/api/asistente/preguntar", json={"pregunta": "¿y para cuándo?", "historial": charla, "sin_tema": True}))
+    assert evs[0]["sigue"] is None and evs[0]["modo"] == "nada"
+    # lo que pide algo general, el saludo y la ayuda de uso no siguen el tema
+    for q in ("¿qué hay que hacer en todas?", "ayuda"):
+        assert eventos(sin_ia.post("/api/asistente/preguntar", json={"pregunta": q, "historial": charla}))[0]["sigue"] is None
+
+
+def test_la_ia_recibe_la_conversacion_recortada(api, ollama_falso):
+    api.post("/api/notas", json={"titulo": "Guantes", "texto": "Comprar guantes de cuero para el taller"})
+    charla = [{"pregunta": f"pregunta {i}", "respuesta": "palabra " * 200, "tema": ""} for i in range(10)]
+    charla[-1] = {"pregunta": "¿qué hay con los guantes?", "respuesta": "Hay que comprarlos.", "tema": "Guantes"}
+    eventos(api.post("/api/asistente/preguntar", json={"pregunta": "¿y para cuándo?", "historial": charla}))
+    mensajes = ollama_falso[-1]["messages"]
+    assert mensajes[0]["role"] == "system" and mensajes[-1]["content"].startswith("DATOS:")
+    anteriores = mensajes[1:-1]
+    assert anteriores[-2:] == [{"role": "user", "content": "¿qué hay con los guantes?"},
+                               {"role": "assistant", "content": "Hay que comprarlos."}]
+    assert len(anteriores) < 2 * 10 and sum(len(m["content"]) for m in anteriores) <= 1800 + 100   # el tope
+    assert all(len(m["content"]) <= 460 for m in anteriores)                                     # respuestas recortadas
+    assert "(Guantes)" in mensajes[-1]["content"]                                                # siguió el tema
+    # basura en el historial: se ignora, no rompe
+    assert eventos(api.post("/api/asistente/preguntar", json={"pregunta": "¿qué hay con los guantes?",
+                                                              "historial": [1, "x", {"pregunta": None}, None]}))[0]["modo"] == "ia"
+
+
 def test_si_la_ia_se_cae_a_mitad_muestra_el_resumen(api, ollama_falso):
     api.post("/api/notas", json={"titulo": "Rompete", "texto": "rompete por favor"})
     evs = preguntar(api, "rompete")
