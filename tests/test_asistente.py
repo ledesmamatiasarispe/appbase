@@ -53,7 +53,11 @@ def ollama_falso(api):
                 self.wfile.write(b'{"message": {"content": "Empiezo"}, "done": false}\n')
                 self.wfile.write(b'{"error": "se quedo sin memoria"}\n')
                 return
-            for pedazo in ("Según la nota, ", "hay que **comprar** guantes."):
+            # la IA elige: los números de los fragmentos y una oración (en JSON, de a pedazos como lo manda Ollama)
+            respuesta = '{"partes": [1, 99], "respuesta": "Hay que comprar guantes."}'
+            if "zapallo" in pedido["messages"][-1]["content"]:
+                respuesta = '{"partes": [], "respuesta": "No figura en la app"}'
+            for pedazo in (respuesta[:20], respuesta[20:]):
                 self.wfile.write(json.dumps({"message": {"content": pedazo}, "done": False}).encode() + b"\n")
             self.wfile.write(b'{"message": {"content": ""}, "done": true}\n')
 
@@ -88,10 +92,11 @@ def test_con_ia_redacta_con_los_datos(api, ollama_falso):
     api.post("/api/notas", json={"titulo": "Guantes", "texto": "Comprar guantes de cuero para el taller"})
     evs = preguntar(api, "¿qué hay que hacer con los guantes?")
     assert evs[0]["modo"] == "ia" and evs[0]["titulo"] == "Notas"
-    assert texto(evs) == "Según la nota, hay que **comprar** guantes."
+    # la oración de la IA y, debajo, el fragmento elegido tal cual (el 99 no existe: se ignora)
+    assert texto(evs).startswith("Hay que comprar guantes.\n- ") and "Comprar guantes de cuero para el taller" in texto(evs)
     mensaje = ollama_falso[-1]["messages"][-1]["content"]
-    assert "DATOS:" in mensaje and "Comprar guantes de cuero" in mensaje and mensaje.endswith("guantes?")
-    assert ollama_falso[-1]["model"] == "modelo-falso:1b" and ollama_falso[-1]["stream"] is True
+    assert mensaje.startswith("FRAGMENTOS:\n[1] ") and "Comprar guantes de cuero" in mensaje and mensaje.endswith("guantes?")
+    assert ollama_falso[-1]["model"] == "modelo-falso:1b" and ollama_falso[-1]["format"]["required"] == ["partes", "respuesta"]
 
 
 def test_la_conversacion_sigue_el_tema(sin_ia):
@@ -117,7 +122,7 @@ def test_la_ia_recibe_la_conversacion_recortada(api, ollama_falso):
     charla[-1] = {"pregunta": "¿qué hay con los guantes?", "respuesta": "Hay que comprarlos.", "tema": "Guantes"}
     eventos(api.post("/api/asistente/preguntar", json={"pregunta": "¿y para cuándo?", "historial": charla}))
     mensajes = ollama_falso[-1]["messages"]
-    assert mensajes[0]["role"] == "system" and mensajes[-1]["content"].startswith("DATOS:")
+    assert mensajes[0]["role"] == "system" and mensajes[-1]["content"].startswith("FRAGMENTOS:")
     anteriores = mensajes[1:-1]
     assert anteriores[-2:] == [{"role": "user", "content": "¿qué hay con los guantes?"},
                                {"role": "assistant", "content": "Hay que comprarlos."}]
@@ -129,11 +134,24 @@ def test_la_ia_recibe_la_conversacion_recortada(api, ollama_falso):
                                                               "historial": [1, "x", {"pregunta": None}, None]}))[0]["modo"] == "ia"
 
 
+def test_la_ia_elige_fragmentos_y_la_app_los_muestra_tal_cual():
+    from modulos.asistente.servicios import _componer, _fragmentos
+    datos = "EQUIPO: EQ-001 Compresor\nPLAN (tareas):\n- servicio A: mensual\n- servicio B: cada 1000 horas\nREGISTROS:\n- 2026-07-06 servicio B"
+    f = _fragmentos({"datos": datos})
+    assert f == [{"grupo": "", "texto": "EQUIPO: EQ-001 Compresor"}, {"grupo": "Plan (tareas)", "texto": "servicio A: mensual"},
+                 {"grupo": "Plan (tareas)", "texto": "servicio B: cada 1000 horas"}, {"grupo": "Registros", "texto": "2026-07-06 servicio B"}]
+    # los del mismo grupo juntos, las fechas legibles, los números que no existen o repetidos se ignoran
+    assert _componer({"partes": [3, 2, 4, 3, 0, 7], "respuesta": "El B fue el 2026-07-06."}, f) == (
+        "El B fue el 06/07/2026.\n- **Plan (tareas):** servicio B: cada 1000 horas servicio A: mensual\n"
+        "- **Registros:** 06/07/2026 servicio B")
+    assert _componer({"partes": [], "respuesta": "Es el que usa aceite"}, f) == "No figura en la app."
+
+
 def test_si_la_ia_se_cae_a_mitad_muestra_el_resumen(api, ollama_falso):
     api.post("/api/notas", json={"titulo": "Rompete", "texto": "rompete por favor"})
     evs = preguntar(api, "rompete")
     assert any(e["tipo"] == "aviso" and "no respondió" in e["aviso"] for e in evs)
-    assert texto(evs).startswith("Empiezo") and "rompete por favor" in texto(evs)
+    assert "rompete por favor" in texto(evs)          # lo que dice la app, sin IA
 
 
 def test_ayuda_y_saludo(sin_ia):
@@ -156,6 +174,40 @@ def test_preguntas_de_uso_con_la_ayuda_de_las_pantallas(sin_ia):
     # sin la ayuda de la pantalla, o algo que no está en ella, no inventa
     sin = eventos(sin_ia.post("/api/asistente/preguntar", json={"pregunta": "¿Cómo cargo un vuelo a Marte?", "ayuda": AYUDA}))
     assert sin[0]["modo"] == "nada" and "ayuda" in texto(sin)
+
+
+def test_guia_sinonimos_y_fichas(sin_ia, tmp_path):
+    from modulos.asistente import Fuente, registrar, servicios, textos
+    guia, sinonimos = tmp_path / "guia.md", tmp_path / "sinonimos.txt"
+    guia.write_text("# Notas\n\n## Vencimientos\nir: notas\nUna nota con vencimiento aparece en rojo cuando pasa la fecha. "
+                    "La fecha se carga al crear la nota.\n", encoding="utf-8")
+    sinonimos.write_text("# prueba\nrecordatorio, nota, apunte\n", encoding="utf-8")
+    registrar(Fuente("prueba", guia=guia, sinonimos=sinonimos))
+    try:
+        grupos = textos.grupos_de_sinonimos()
+        assert any({"carg", "anot", "registr"} <= g for g in grupos)       # los comunes, por raíz
+        assert any({"recordatori", "nota", "apunt"} <= g for g in grupos)  # los del módulo
+
+        # de uso: la guía (con su pantalla) antes que nada
+        evs = eventos(sin_ia.post("/api/asistente/preguntar", json={"pregunta": "¿Dónde veo los vencimientos?"}))
+        assert evs[0]["titulo"] == "Cómo se usa la app" and "aparece en rojo" in texto(evs)
+        assert {"texto": "Ir a notas", "ir": "notas"} in evs[0]["enlaces"]
+        # sin parecer de uso, como último recurso (tiene que coincidir en más de una cosa: "anotar" ~ "carga")
+        assert preguntar(sin_ia, "quiero anotar un vencimiento")[0]["titulo"] == "Cómo se usa la app"
+
+        # las fichas: lo que no nombra nada en particular; se rehacen solas cuando la base cambia
+        sin_ia.post("/api/notas", json={"titulo": "Guantes", "texto": "Comprar guantes de cuero para el taller"})
+        evs = preguntar(sin_ia, "¿algo sobre un guante?")
+        assert evs[0]["titulo"] == "Búsqueda en lo anotado" and "[Nota] Guantes" in texto(evs)
+        sin_ia.post("/api/notas", json={"titulo": "Cascos", "texto": "Revisar los cascos del sector de colada"})
+        assert "[Nota] Cascos" in texto(preguntar(sin_ia, "¿qué apunte habla del casco?"))   # sinónimo + singular
+
+        t = sin_ia.get("/api/asistente/textos").json()
+        titulos = [s["titulo"] for s in t["guia"]]
+        assert "Vencimientos" in titulos and "La barra de preguntas" in titulos   # la del módulo y la común
+        assert t["por_tipo"]["Nota"] >= 2 and any(f["titulo"] == "Cascos" for f in t["fichas"])
+    finally:
+        servicios.FUENTES[:] = [f for f in servicios.FUENTES if f.nombre != "prueba"]
 
 
 def test_si_no_figura_y_sin_resultado(api, ollama_falso):

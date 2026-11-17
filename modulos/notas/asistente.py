@@ -32,6 +32,14 @@ def contexto(pregunta: str) -> dict | None:
             "enlaces": [{"texto": "Ver notas", "ir": "notas"}]}
 
 
+def fichas() -> list[dict]:
+    """Un texto corto por nota, ya armado: el asistente los busca cuando la pregunta no da con nada más (y se rehacen
+    solos cuando cambia la base)."""
+    return [{"tipo": "Nota", "titulo": n["titulo"], "ir": "notas",
+             "texto": f"prioridad {n['prioridad']}{', vence ' + n['vence'] if n.get('vence') else ''}"
+                      f"{'' if n['activa'] else ', dada de baja'}. {n['texto']}"} for n in servicios.listar()]
+
+
 def temas(pregunta: str) -> list[str]:
     """De qué nota habla la pregunta (su título), para seguir la conversación: después de "¿qué hay que hacer con los
     guantes?", "¿y para cuándo?" se contesta como "¿y para cuándo? (Guantes)", que `contexto` encuentra por la palabra."""
@@ -45,4 +53,4 @@ try:
 except ImportError:
     registrar = None
 if registrar:
-    registrar(Fuente("notas", responder=responder, contexto=contexto, temas=temas, ejemplos=["¿Cuántas notas hay?"]))
+    registrar(Fuente("notas", responder=responder, contexto=contexto, temas=temas, fichas=fichas, ejemplos=["¿Cuántas notas hay?"]))

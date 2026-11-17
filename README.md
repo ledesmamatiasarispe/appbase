@@ -64,7 +64,13 @@ Copiar `modulos/notas` (cada archivo explica su parte). Reglas para que los mód
   (molde: `modulos/notas/asistente.py`): `responder`, `contexto` (con `si_no_figura` para ofrecer cargar lo que falta),
   `sin_resultado`, `ejemplos` y `temas` (de qué cosa habla la pregunta: con eso la conversación sigue el tema, "¿y
   cuántas horas tiene?" después de nombrar una máquina; la IA además recibe las últimas preguntas, con tope de
-  caracteres); las respuestas pueden traer botones que abren pantallas o formularios del módulo
+  caracteres), `fichas` (un texto corto ya armado por cada cosa cargada; se rehacen solas cuando cambia la base),
+  `guia` (un `ia/guia.md` con cómo se usa el módulo, escrito para la IA) y `sinonimos` (un `ia/sinonimos.txt`; el
+  asistente trae los comunes). La IA recibe solo lo que viene al caso; Opciones → "Ver lo que lee la IA" lo muestra
+  todo (ver `modulos/asistente/textos.py`). La IA **elige, no redacta**: recibe los datos en fragmentos numerados y
+  contesta con los números de los que sirven más una oración (JSON forzado por Ollama); la app muestra esos fragmentos
+  tal cual. Escribir es lo caro en una PC sin placa de video: así son ~20 tokens por respuesta. `herramientas/compilar.py` mete las carpetas `ia/` en el .exe. Las
+  respuestas pueden traer botones que abren pantallas o formularios del módulo
   (`window.asisAcciones`). Opciones tiene "Reiniciar la IA". Se trae con
   `python herramientas/sincronizar.py <app> --modulo asistente --llevar` y se suma a `MODULOS` en `app/main.py`.
   La IA se instala aparte: Ollama + un modelo chico (`ollama pull qwen2.5:3b`); se configura en Opciones.
