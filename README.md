@@ -58,9 +58,10 @@ Copiar `modulos/notas` (cada archivo explica su parte). Reglas para que los mód
 ## Módulos listos para sumar
 
 - **`modulos/asistente`** — la barra "Preguntá algo" arriba de todo, con micrófono donde el navegador lo permite
-  (en el celular, el del teclado). Lo exacto (listas, cuentas, vencimientos) lo contesta la app; lo demás lo redacta una
-  IA local (Ollama, sin internet) con los datos que junta cada módulo; sin IA, muestra un resumen. Contesta "ayuda" con
-  ejemplos y "¿cómo cargo…?" con los textos de la Ayuda de las pantallas. Cada módulo le enseña lo suyo con una `Fuente`
+  (en el celular, el del teclado). Lo exacto (listas, cuentas, vencimientos) lo contesta la app; lo demás lo busca una
+  IA local (Ollama, sin internet) en los datos que junta cada módulo; sin IA, muestra un resumen. Contesta "ayuda" con
+  ejemplos, y "¿cómo cargo…?" o "¿qué hago si…?" con la guía y los textos de la Ayuda de las pantallas. Su tarjeta de
+  Opciones suma sus pasos a la Ayuda de esa pantalla. Cada módulo le enseña lo suyo con una `Fuente`
   (molde: `modulos/notas/asistente.py`): `responder`, `contexto` (con `si_no_figura` para ofrecer cargar lo que falta),
   `sin_resultado`, `ejemplos` y `temas` (de qué cosa habla la pregunta: con eso la conversación sigue el tema, "¿y
   cuántas horas tiene?" después de nombrar una máquina; la IA además recibe las últimas preguntas, con tope de
